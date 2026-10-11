@@ -1,0 +1,45 @@
+package auditlog_uc
+
+import (
+	"context"
+
+	"github.com/vucongthanh92/courier-user-svc/internal/domain/entities"
+	"github.com/vucongthanh92/courier-user-svc/internal/domain/interfaces"
+	"github.com/vucongthanh92/courier-user-svc/internal/domain/models"
+	utilsError "github.com/vucongthanh92/go-base-utils/helper/http_error"
+	"github.com/vucongthanh92/go-base-utils/tracing"
+)
+
+type AuditLogUseCaseImpl struct {
+	auditLogWriteRepo interfaces.AuditLogCommandRepoI
+}
+
+func InitAuditLogUsecase(
+	auditLogWriteRepo interfaces.AuditLogCommandRepoI,
+) interfaces.AuditLogServiceI {
+	return &AuditLogUseCaseImpl{
+		auditLogWriteRepo: auditLogWriteRepo,
+	}
+}
+
+// CreateAuditLog implements interfaces.AuditLogServiceI
+func (s *AuditLogUseCaseImpl) CreateAuditLog(ctx context.Context, req models.AuditLogRequest) {
+
+	ctx, span := tracing.StartSpanFromContext(ctx, "CreateAuditLog")
+	defer span.End()
+
+	// Create audit log entity
+	auditLog := entities.AuditLog{
+		UserID:    req.CreatorID,
+		Action:    req.Action,
+		IP:        req.IP,
+		UserAgent: req.UserAgent,
+		Metadata:  req.Metadata,
+	}
+
+	// Insert audit log
+	_, logErr := s.auditLogWriteRepo.InsertAuditLog(ctx, auditLog)
+	if logErr != nil {
+		utilsError.InitErrorBuilder(ctx).SetLogError(logErr.LogError).ExposeLogError()
+	}
+}

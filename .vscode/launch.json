@@ -1,0 +1,23 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug User Service (local)",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}",
+      "args": [
+        "start",
+        "--config=./config/local/config.yaml"
+      ],
+      "cwd": "${workspaceFolder}",
+      "env": {},
+      "showLog": true,
+      "presentation": {
+        "group": "services",
+        "order": 1
+      }
+    },
+  ]
+}

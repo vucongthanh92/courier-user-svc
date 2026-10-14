@@ -7,12 +7,11 @@
 package jwkpb
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -140,7 +139,7 @@ const file_jwk_proto_rawDesc = "" +
 	"\x03alg\x18\x03 \x01(\tR\x03alg2W\n" +
 	"\n" +
 	"JWKService\x12I\n" +
-	"\fGetPublicKey\x12\x1b.jwk.v1.GetPublicKeyRequest\x1a\x1c.jwk.v1.GetPublicKeyResponseBBZ@github.com/vucongthanh92/courier-user-svc/pkg/grpc/gen;jwkpbb\x06proto3"
+	"\fGetPublicKey\x12\x1b.jwk.v1.GetPublicKeyRequest\x1a\x1c.jwk.v1.GetPublicKeyResponseB>Z<github.com/vucongthanh92/courier-user-svc/pkg/grpc/gen;jwkpbb\x06proto3"
 
 var (
 	file_jwk_proto_rawDescOnce sync.Once

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package jwk.v1;
 
-option go_package = "github.com/vucongthanh92/courier/shared/grpc/user-service/jwk/gen;jwkpb";
+option go_package = "github.com/vucongthanh92/courier-user-svc/pkg/grpc/gen;jwkpb";
 
 service JWKService {
   rpc GetPublicKey(GetPublicKeyRequest) returns (GetPublicKeyResponse);

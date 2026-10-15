@@ -75,7 +75,11 @@ func (s *AuthCredentialUseCaseImpl) SetPassword(ctx context.Context, req models.
 	if credential.PasswordVersion != 0 || credential.PasswordHash != "" {
 		return utilsError.InitErrorBuilder(ctx).
 			SetStatus(http.StatusConflict).
-			SetError(utilsModels.ErrorDTO{Code: "password_already_set", Message: "Password already exists"})
+			SetError(utilsModels.ErrorDTO{
+				Code:    "password_already_set",
+				Field:   "password",
+				Message: "Password already exists",
+			})
 	}
 
 	// step 3. update password and password version

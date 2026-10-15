@@ -1091,9 +1091,6 @@ google.golang.org/protobuf/types/known/fieldmaskpb
 google.golang.org/protobuf/types/known/structpb
 google.golang.org/protobuf/types/known/timestamppb
 google.golang.org/protobuf/types/known/wrapperspb
-# gopkg.in/guregu/null.v3 v3.5.0
-## explicit
-gopkg.in/guregu/null.v3
 # gopkg.in/ini.v1 v1.67.0
 ## explicit
 gopkg.in/ini.v1

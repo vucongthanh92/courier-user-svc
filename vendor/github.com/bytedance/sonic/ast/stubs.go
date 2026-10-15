@@ -34,7 +34,7 @@ func unsafe_NewArray(typ *rt.GoType, n int) unsafe.Pointer
 
 //go:nosplit
 func mem2ptr(s []byte) unsafe.Pointer {
-	return (*rt.GoSlice)(unsafe.Pointer(&s)).Ptr
+    return (*rt.GoSlice)(unsafe.Pointer(&s)).Ptr
 }
 
 var safeSet = [utf8.RuneSelf]bool{

@@ -52,7 +52,7 @@ func (j *Job) shouldRun() bool {
 	return time.Now().Unix() >= j.nextRun.Unix()
 }
 
-// Run the job and immediately reschedule it
+//Run the job and immediately reschedule it
 func (j *Job) run() ([]reflect.Value, error) {
 	if j.lock {
 		if locker == nil {
@@ -115,7 +115,6 @@ func (j *Job) DoSafely(jobFun interface{}, params ...interface{}) error {
 }
 
 // At schedules job at specific time of day
-//
 //	s.Every(1).Day().At("10:30:01").Do(task)
 //	s.Every(1).Monday().At("10:30:01").Do(task)
 func (j *Job) At(t string) *Job {
@@ -130,14 +129,12 @@ func (j *Job) At(t string) *Job {
 }
 
 // GetAt returns the specific time of day the job will run at
-//
 //	s.Every(1).Day().At("10:30").GetAt() == "10:30"
 func (j *Job) GetAt() string {
 	return fmt.Sprintf("%d:%d", j.atTime/time.Hour, (j.atTime%time.Hour)/time.Minute)
 }
 
 // Loc sets the location for which to interpret "At"
-//
 //	s.Every(1).Day().At("10:30").Loc(time.UTC).Do(task)
 func (j *Job) Loc(loc *time.Location) *Job {
 	j.loc = loc

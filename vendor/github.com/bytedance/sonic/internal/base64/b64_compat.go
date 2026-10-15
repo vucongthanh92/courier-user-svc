@@ -1,4 +1,3 @@
-//go:build !amd64 || !go1.17 || go1.24
 // +build !amd64 !go1.17 go1.24
 
 /*
@@ -17,7 +16,7 @@
  * limitations under the License.
  */
 
-package base64
+package base64 
 
 import (
 	"encoding/base64"
@@ -29,13 +28,13 @@ func EncodeBase64(buf []byte, src []byte) []byte {
 	}
 	buf = append(buf, '"')
 	need := base64.StdEncoding.EncodedLen(len(src))
-	if cap(buf)-len(buf) < need {
-		tmp := make([]byte, len(buf), len(buf)+need*2)
+	if cap(buf) - len(buf) < need {
+		tmp := make([]byte, len(buf), len(buf) + need*2)
 		copy(tmp, buf)
 		buf = tmp
 	}
 	base64.StdEncoding.Encode(buf[len(buf):cap(buf)], src)
-	buf = buf[:len(buf)+need]
+	buf = buf[:len(buf) + need]
 	buf = append(buf, '"')
 	return buf
 }

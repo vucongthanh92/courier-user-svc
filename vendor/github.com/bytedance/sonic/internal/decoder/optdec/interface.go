@@ -3,8 +3,8 @@ package optdec
 import (
 	"encoding"
 	"encoding/json"
-	"reflect"
 	"unsafe"
+	"reflect"
 
 	"github.com/bytedance/sonic/internal/rt"
 )
@@ -20,12 +20,12 @@ func (d *efaceDecoder) FromDom(vp unsafe.Pointer, node Node, ctx *context) error
 
 	eface := *(*rt.GoEface)(vp)
 	/*
-		 not pointer type, or nil pointer, or self-pointed interface{}, such as
-			```go
-			var v interface{}
-			v = &v
-			return v
-			``` see `issue758_test.go`.
+	 not pointer type, or nil pointer, or self-pointed interface{}, such as 
+		```go
+		var v interface{}
+		v = &v
+		return v
+		``` see `issue758_test.go`.
 	*/
 	if eface.Value == nil || eface.Type.Kind() != reflect.Ptr || eface.Value == vp {
 		ret, err := node.AsEface(ctx)
@@ -81,10 +81,11 @@ func (d *ifaceDecoder) FromDom(vp unsafe.Pointer, node Node, ctx *context) error
 		if err != nil {
 			return err
 		}
-
+	
 		*(*interface{})(vp) = ret
 		return nil
 	}
+
 
 	etp := rt.PtrElem(vt)
 	vp = iface.Value
@@ -125,7 +126,7 @@ func (d *unmarshalTextDecoder) FromDom(vp unsafe.Pointer, node Node, ctx *contex
 	}))
 
 	// fast path
-	if u, ok := v.(encoding.TextUnmarshaler); ok {
+	if u, ok :=  v.(encoding.TextUnmarshaler); ok {
 		return u.UnmarshalText(txt)
 	}
 
@@ -139,13 +140,13 @@ func (d *unmarshalTextDecoder) FromDom(vp unsafe.Pointer, node Node, ctx *contex
 }
 
 type unmarshalJSONDecoder struct {
-	typ    *rt.GoType
-	strOpt bool
+	typ 	*rt.GoType
+	strOpt	bool
 }
 
 func (d *unmarshalJSONDecoder) FromDom(vp unsafe.Pointer, node Node, ctx *context) error {
 	v := *(*interface{})(unsafe.Pointer(&rt.GoEface{
-		Type:  d.typ,
+		Type: d.typ,
 		Value: vp,
 	}))
 
@@ -163,7 +164,7 @@ func (d *unmarshalJSONDecoder) FromDom(vp unsafe.Pointer, node Node, ctx *contex
 	}
 
 	// fast path
-	if u, ok := v.(json.Unmarshaler); ok {
+	if u, ok :=  v.(json.Unmarshaler); ok {
 		return u.UnmarshalJSON((input))
 	}
 

@@ -1,4 +1,3 @@
-//go:build amd64 && go1.17 && !go1.24
 // +build amd64,go1.17,!go1.24
 
 package rt
@@ -17,5 +16,5 @@ func DecodeBase64(raw []byte) ([]byte, error) {
 }
 
 func EncodeBase64(src []byte) string {
-	return base64x.StdEncoding.EncodeToString(src)
+    return base64x.StdEncoding.EncodeToString(src)
 }

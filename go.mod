@@ -19,7 +19,7 @@ require (
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
 	github.com/swaggo/swag v1.8.12
-	github.com/vucongthanh92/courier/shared v0.0.0
+	github.com/vucongthanh92/courier/shared v0.0.0-20261011113145-43c7030c3c51
 	github.com/vucongthanh92/go-base-utils v1.2.10
 	go.opentelemetry.io/otel/trace v1.43.0
 	go.uber.org/zap v1.27.0
@@ -192,5 +192,3 @@ require (
 	gorm.io/driver/sqlite v1.5.7 // indirect
 	gorm.io/driver/sqlserver v1.6.0 // indirect
 )
-
-replace github.com/vucongthanh92/courier/shared => ../courier-common/shared

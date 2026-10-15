@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/vucongthanh92/courier-user-svc/config"
 	"github.com/vucongthanh92/courier-user-svc/database"
@@ -26,9 +27,9 @@ func RunHealthCheck(
 	return func() {
 		health := healthcheck.NewHandler()
 
-		// interval := time.Duration(cfg.Heathcheck.Interval) * time.Second
+		interval := time.Duration(cfg.Heathcheck.Interval) * time.Second
 		livenessCheck(cfg, health)
-		// readinessCheck(ctx, health, interval, readDb, writeDb)
+		readinessCheck(ctx, health, interval, readDb, writeDb)
 
 		logMd := func(next http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -56,30 +57,41 @@ func livenessCheck(cfg *config.AppConfig, health healthcheck.Handler) {
 	health.AddLivenessCheck(constants.GoroutineThreshold, healthcheck.GoroutineCountCheck(cfg.Heathcheck.GoroutineThreshold))
 }
 
-// func readinessCheck(
-// 	ctx context.Context,
-// 	health healthcheck.Handler,
-// 	interval time.Duration,
-// 	readDb database.GormReadDb,
-// 	writeDb database.GormWriteDb,
-// ) {
-// 	health.AddReadinessCheck(constants.ReadDatabase, healthcheck.AsyncWithContext(ctx, func() error {
+func readinessCheck(
+	ctx context.Context,
+	health healthcheck.Handler,
+	interval time.Duration,
+	readDb database.GormReadDb,
+	writeDb database.GormWriteDb,
+) {
+	health.AddReadinessCheck(constants.ReadDatabase, healthcheck.AsyncWithContext(ctx, func() error {
+		if readDb == nil {
+			return fmt.Errorf("read database is not initialized")
+		}
+		sqlDb, err := (*readDb).DB()
+		if err == nil {
+			err = sqlDb.PingContext(ctx)
+		}
+		if err != nil {
+			logger.Error("Read database", zap.Error(err))
+		}
+		return err
+	}, interval))
 
-// 		err := readDb.DB.PingContext(ctx)
-// 		if err != nil {
-// 			logger.Error("Read database", zap.Error(err))
-// 		}
-// 		return err
-// 	}, interval))
-
-// 	health.AddReadinessCheck(constants.WriteDatabase, healthcheck.AsyncWithContext(ctx, func() error {
-// 		err := writeDb.DB.PingContext(ctx)
-// 		if err != nil {
-// 			logger.Error("Write database", zap.Error(err))
-// 		}
-// 		return err
-// 	}, interval))
-// }
+	health.AddReadinessCheck(constants.WriteDatabase, healthcheck.AsyncWithContext(ctx, func() error {
+		if writeDb == nil {
+			return fmt.Errorf("write database is not initialized")
+		}
+		sqlDb, err := (*writeDb).DB()
+		if err == nil {
+			err = sqlDb.PingContext(ctx)
+		}
+		if err != nil {
+			logger.Error("Write database", zap.Error(err))
+		}
+		return err
+	}, interval))
+}
 
 type ResponseWriter struct {
 	http.ResponseWriter

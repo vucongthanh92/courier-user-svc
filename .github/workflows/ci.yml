@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+          cache: true
+      - name: Download and verify modules
+        run: |
+          go mod download
+          go mod verify
+      - name: Test without vendoring
+        run: go test -mod=readonly ./...
+
+  container:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build container
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: courier/user-service:${{ github.sha }}

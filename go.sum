@@ -605,6 +605,8 @@ github.com/vmihailenco/msgpack/v5 v5.3.4 h1:qMKAwOV+meBw2Y8k9cVwAy7qErtYCwBzZ2el
 github.com/vmihailenco/msgpack/v5 v5.3.4/go.mod h1:7xyJ9e+0+9SaZT0Wt1RGleJXzli6Q/V5KbhBonMG9jc=
 github.com/vmihailenco/tagparser/v2 v2.0.0 h1:y09buUbR+b5aycVFQs/g70pqKVZNBmxwAhO7/IwNM9g=
 github.com/vmihailenco/tagparser/v2 v2.0.0/go.mod h1:Wri+At7QHww0WTrCBeu4J6bNtoV6mEfg5OIWRZA9qds=
+github.com/vucongthanh92/courier/shared v0.0.0-20261011113145-43c7030c3c51 h1:X/EfXizo/pmNSE/S7CEsZrwIhYfipioE1Vo0xcbt70U=
+github.com/vucongthanh92/courier/shared v0.0.0-20261011113145-43c7030c3c51/go.mod h1:QThzEuZi8YqbxPXlFciegnhiiMwVec3WOBE3dJmTtZE=
 github.com/vucongthanh92/go-base-utils v1.2.10 h1:c3dGokPGtPb9H+KA6z78zUHNNnDWAOKX6wlq1Jn+uD8=
 github.com/vucongthanh92/go-base-utils v1.2.10/go.mod h1:mBlNsXxQnECgkh1UeJfaxlF8h4WR8iViZAVXArg5dyA=
 github.com/xdg-go/pbkdf2 v1.0.0 h1:Su7DPu48wXMwC3bs7MCNG+z4FhcyEuz5dlvchbq0B0c=

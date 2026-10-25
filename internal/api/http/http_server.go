@@ -68,13 +68,15 @@ func (s *Server) Run() {
 	router.Use(utilsMidd.CorsV2(s.cfg.Http.AllowOrigins))
 
 	// Add recover panic middleware
-	router.Use(utilsMidd.RecoverPanicMiddleware(utilsMidd.RecoverPanicMiddlewareConfig{
-		SlackConfig: slack.SlackConfig{
-			Channel:         s.cfg.SlackService.Channel,
-			Username:        s.cfg.SlackService.Username,
-			UrlSlackWebHook: s.cfg.SlackService.UrlSlackWebhook,
-		},
-	}))
+	if s.cfg.SlackService != nil {
+		router.Use(utilsMidd.RecoverPanicMiddleware(utilsMidd.RecoverPanicMiddlewareConfig{
+			SlackConfig: slack.SlackConfig{
+				Channel:         s.cfg.SlackService.Channel,
+				Username:        s.cfg.SlackService.Username,
+				UrlSlackWebHook: s.cfg.SlackService.UrlSlackWebhook,
+			},
+		}))
+	}
 
 	// Load public keys for JWT middleware. Currently we only support 1 active key,
 	// but we design the return type as map to support multiple keys in the future without changing middleware code.

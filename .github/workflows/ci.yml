@@ -48,10 +48,12 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      pull-requests: read
     env:
       AWS_REGION: ap-southeast-2
       AWS_ROLE_ARN: arn:aws:iam::016170038458:role/courier-dev-github-ecr-publisher
       ECR_REPOSITORY: courier/user-service
+      GITOPS_REPOSITORY: vucongthanh92/courier-common
     steps:
       - uses: actions/checkout@v4
       - uses: aws-actions/configure-aws-credentials@v4
@@ -69,3 +71,86 @@ jobs:
           platforms: linux/arm64
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:sha-${{ github.sha }}
+
+      - name: Report unconfigured GitOps release automation
+        if: ${{ secrets.COURIER_RELEASE_APP_ID == '' || secrets.COURIER_RELEASE_APP_PRIVATE_KEY == '' }}
+        run: echo "GitOps release promotion is skipped until the courier-common GitHub App secrets are configured."
+
+      - name: Create GitHub App token for GitOps release
+        if: ${{ secrets.COURIER_RELEASE_APP_ID != '' && secrets.COURIER_RELEASE_APP_PRIVATE_KEY != '' }}
+        id: gitops-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.COURIER_RELEASE_APP_ID }}
+          private-key: ${{ secrets.COURIER_RELEASE_APP_PRIVATE_KEY }}
+          owner: vucongthanh92
+          repositories: courier-common
+
+      - name: Resolve merged pull request and image digest
+        if: ${{ secrets.COURIER_RELEASE_APP_ID != '' && secrets.COURIER_RELEASE_APP_PRIVATE_KEY != '' }}
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          merged_pr="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" \
+            --jq '[.[] | select(.merged_at != null)][0] | if . == null then "Direct push (no associated pull request)" else "#\(.number) — \(.title)" end')"
+          digest="$(aws ecr describe-images \
+            --repository-name "${ECR_REPOSITORY}" \
+            --image-ids "imageTag=sha-${GITHUB_SHA}" \
+            --query 'imageDetails[0].imageDigest' \
+            --output text)"
+          {
+            echo "merged_pr=${merged_pr}"
+            echo "digest=${digest}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create and merge GitOps release pull request
+        if: ${{ secrets.COURIER_RELEASE_APP_ID != '' && secrets.COURIER_RELEASE_APP_PRIVATE_KEY != '' }}
+        env:
+          GH_TOKEN: ${{ steps.gitops-token.outputs.token }}
+          IMAGE_TAG: sha-${{ github.sha }}
+          IMAGE_DIGEST: ${{ steps.release.outputs.digest }}
+          MERGED_PR: ${{ steps.release.outputs.merged_pr }}
+        run: |
+          set -euo pipefail
+          release_branch="bot/release/user-service/${GITHUB_SHA}"
+          gitops_dir="$RUNNER_TEMP/courier-common"
+
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${GITOPS_REPOSITORY}.git" "$gitops_dir"
+          cd "$gitops_dir"
+          git switch main
+          git pull --ff-only origin main
+          git switch -C "$release_branch"
+
+          manifest="k8s/overlays/dev/user-service/kustomization.yaml"
+          sed -E -i "s|^([[:space:]]*newTag: )[[:alnum:]._-]+$|\\1${IMAGE_TAG}|" "$manifest"
+          grep -Fx "    newTag: ${IMAGE_TAG}" "$manifest"
+
+          git config user.name "courier-release-bot[bot]"
+          git config user.email "courier-release-bot[bot]@users.noreply.github.com"
+          git add "$manifest"
+          git diff --cached --quiet && exit 0
+          git commit -m "release: deploy user-service ${GITHUB_SHA:0:12}"
+          git push --force-with-lease origin "$release_branch"
+
+          body_file="$RUNNER_TEMP/release-pr.md"
+          cat > "$body_file" <<EOF
+          ## Automated dev release
+
+          - **Service cần update:** \`user-service\`
+          - **Pull request đã được merge:** ${MERGED_PR}
+          - **Mô tả update:** Published the immutable ARM64 image built from \`${GITHUB_SHA}\`.
+          - **Ghi chú khác:** ECR image \`${IMAGE_TAG}\` (digest \`${IMAGE_DIGEST}\`). This PR is automatically merged for the dev environment; Argo CD performs the rollout.
+
+          Source CI: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+          EOF
+
+          pr_url="$(gh pr list --repo "$GITOPS_REPOSITORY" --head "$release_branch" --base main --state open --json url --jq '.[0].url')"
+          if [ -z "$pr_url" ]; then
+            pr_url="$(gh pr create --repo "$GITOPS_REPOSITORY" --base main --head "$release_branch" --title "release: deploy user-service ${GITHUB_SHA:0:12}" --body-file "$body_file")"
+          else
+            gh pr edit "$pr_url" --repo "$GITOPS_REPOSITORY" --title "release: deploy user-service ${GITHUB_SHA:0:12}" --body-file "$body_file"
+          fi
+
+          gh pr merge "$pr_url" --repo "$GITOPS_REPOSITORY" --squash --delete-branch

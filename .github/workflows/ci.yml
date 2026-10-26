@@ -54,6 +54,8 @@ jobs:
       AWS_ROLE_ARN: arn:aws:iam::016170038458:role/courier-dev-github-ecr-publisher
       ECR_REPOSITORY: courier/user-service
       GITOPS_REPOSITORY: vucongthanh92/courier-common
+      RELEASE_APP_ID: ${{ secrets.COURIER_RELEASE_APP_ID }}
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.COURIER_RELEASE_APP_PRIVATE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: aws-actions/configure-aws-credentials@v4
@@ -73,21 +75,21 @@ jobs:
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:sha-${{ github.sha }}
 
       - name: Report unconfigured GitOps release automation
-        if: ${{ secrets.COURIER_RELEASE_APP_ID == '' || secrets.COURIER_RELEASE_APP_PRIVATE_KEY == '' }}
+        if: ${{ env.RELEASE_APP_ID == '' || env.RELEASE_APP_PRIVATE_KEY == '' }}
         run: echo "GitOps release promotion is skipped until the courier-common GitHub App secrets are configured."
 
       - name: Create GitHub App token for GitOps release
-        if: ${{ secrets.COURIER_RELEASE_APP_ID != '' && secrets.COURIER_RELEASE_APP_PRIVATE_KEY != '' }}
+        if: ${{ env.RELEASE_APP_ID != '' && env.RELEASE_APP_PRIVATE_KEY != '' }}
         id: gitops-token
         uses: actions/create-github-app-token@v2
         with:
-          app-id: ${{ secrets.COURIER_RELEASE_APP_ID }}
-          private-key: ${{ secrets.COURIER_RELEASE_APP_PRIVATE_KEY }}
+          app-id: ${{ env.RELEASE_APP_ID }}
+          private-key: ${{ env.RELEASE_APP_PRIVATE_KEY }}
           owner: vucongthanh92
           repositories: courier-common
 
       - name: Resolve merged pull request and image digest
-        if: ${{ secrets.COURIER_RELEASE_APP_ID != '' && secrets.COURIER_RELEASE_APP_PRIVATE_KEY != '' }}
+        if: ${{ env.RELEASE_APP_ID != '' && env.RELEASE_APP_PRIVATE_KEY != '' }}
         id: release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -106,7 +108,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Create and merge GitOps release pull request
-        if: ${{ secrets.COURIER_RELEASE_APP_ID != '' && secrets.COURIER_RELEASE_APP_PRIVATE_KEY != '' }}
+        if: ${{ env.RELEASE_APP_ID != '' && env.RELEASE_APP_PRIVATE_KEY != '' }}
         env:
           GH_TOKEN: ${{ steps.gitops-token.outputs.token }}
           IMAGE_TAG: sha-${{ github.sha }}
@@ -144,6 +146,8 @@ jobs:
           - **Ghi chú khác:** ECR image \`${IMAGE_TAG}\` (digest \`${IMAGE_DIGEST}\`). This PR is automatically merged for the dev environment; Argo CD performs the rollout.
 
           Source CI: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+
+          — Nội dung được tạo tự động bởi Courier Dev Release Bot (workflow được cấu hình bởi AI, OpenAI Codex).
           EOF
 
           pr_url="$(gh pr list --repo "$GITOPS_REPOSITORY" --head "$release_branch" --base main --state open --json url --jq '.[0].url')"

@@ -64,9 +64,30 @@ jobs:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
       - id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
+
+      - name: Check whether the immutable image already exists
+        id: ecr_image
+        run: |
+          set -euo pipefail
+          if aws ecr describe-images \
+            --repository-name "${ECR_REPOSITORY}" \
+            --image-ids "imageTag=sha-${GITHUB_SHA}" \
+            --query 'imageDetails[0].imageDigest' \
+            --output text > /dev/null 2> "$RUNNER_TEMP/ecr-image.err"; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          elif grep -q 'ImageNotFoundException' "$RUNNER_TEMP/ecr-image.err"; then
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          else
+            cat "$RUNNER_TEMP/ecr-image.err" >&2
+            exit 1
+          fi
+
+      - if: steps.ecr_image.outputs.exists != 'true'
+        uses: docker/setup-qemu-action@v3
+      - if: steps.ecr_image.outputs.exists != 'true'
+        uses: docker/setup-buildx-action@v3
       - name: Publish immutable ARM64 image
+        if: steps.ecr_image.outputs.exists != 'true'
         uses: docker/build-push-action@v6
         with:
           context: .

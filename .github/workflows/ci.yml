@@ -144,6 +144,8 @@ jobs:
           - **Ghi chú khác:** ECR image \`${IMAGE_TAG}\` (digest \`${IMAGE_DIGEST}\`). This PR is automatically merged for the dev environment; Argo CD performs the rollout.
 
           Source CI: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+
+          — Nội dung được tạo tự động bởi Courier Dev Release Bot (workflow được cấu hình bởi AI, OpenAI Codex).
           EOF
 
           pr_url="$(gh pr list --repo "$GITOPS_REPOSITORY" --head "$release_branch" --base main --state open --json url --jq '.[0].url')"

@@ -216,7 +216,7 @@ func (s *AuthUseCaseImpl) VerifyEmail(ctx context.Context, req models.VerifyEmai
 			"status":  constants.UserStatusVerified,
 		})
 		outboxReq := models.CreateOutboxRequest{
-			AggregateType: "user",
+			AggregateType: "user_verified_success",
 			AggregateID:   strconv.FormatUint(verEmail.UserID, 10),
 			EventType:     constants.EventTypeUserEmailVerifiedV1,
 			Payload:       payload,

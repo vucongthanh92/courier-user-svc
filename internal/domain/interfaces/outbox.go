@@ -10,6 +10,7 @@ import (
 
 type OutboxQueryRepoI interface {
 	GetOutboxByID(ctx context.Context, id uint64) (*entities.Outbox, *utilsError.ErrorBuilder)
+	GetUnpublishedOutbox(ctx context.Context, limit int) ([]entities.Outbox, *utilsError.ErrorBuilder)
 }
 
 type OutboxCommandRepoI interface {

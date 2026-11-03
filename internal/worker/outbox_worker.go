@@ -15,6 +15,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const outboxRecoveryBatchSize = 100
+
 type OutboxWorker struct {
 	pgxPool           *pgxpool.Pool
 	outboxQueryRepo   interfaces.OutboxQueryRepoI
@@ -68,6 +70,7 @@ func (w *OutboxWorker) Start(ctx context.Context) error {
 	}
 
 	w.logger.Info("Successfully subscribed to outbox_events channel")
+	w.recoverUnpublishedOutbox(ctx)
 
 	// Listen for notifications
 	for {
@@ -117,9 +120,35 @@ func (w *OutboxWorker) processNotification(ctx context.Context, payload string) 
 		return fmt.Errorf("failed to fetch outbox event: %v", txnErr)
 	}
 
+	return w.processOutboxEvent(ctx, outboxEvent)
+}
+
+func (w *OutboxWorker) recoverUnpublishedOutbox(ctx context.Context) {
+	outboxEvents, txnErr := w.outboxQueryRepo.GetUnpublishedOutbox(ctx, outboxRecoveryBatchSize)
+	if txnErr != nil {
+		w.logger.Error("Failed to load unpublished outbox events for recovery", zap.Any("error", txnErr))
+		return
+	}
+
+	for index := range outboxEvents {
+		if err := w.processOutboxEvent(ctx, &outboxEvents[index]); err != nil {
+			w.logger.Error(
+				"Failed to recover unpublished outbox event",
+				zap.Error(err),
+				zap.Uint64("outbox_id", outboxEvents[index].ID),
+			)
+		}
+	}
+
+	if len(outboxEvents) > 0 {
+		w.logger.Info("Completed unpublished outbox recovery", zap.Int("event_count", len(outboxEvents)))
+	}
+}
+
+func (w *OutboxWorker) processOutboxEvent(ctx context.Context, outboxEvent *entities.Outbox) error {
 	// Check if already published
 	if outboxEvent.PublishedAt != nil {
-		w.logger.Info("Outbox event already published, skipping", zap.Uint64("outbox_id", outboxID))
+		w.logger.Info("Outbox event already published, skipping", zap.Uint64("outbox_id", outboxEvent.ID))
 		return nil
 	}
 
@@ -141,20 +170,20 @@ func (w *OutboxWorker) processNotification(ctx context.Context, payload string) 
 			return err
 		}
 	default:
-		w.logger.Warn("Unknown event type", zap.String("event_type", outboxEvent.EventType), zap.Uint64("outbox_id", outboxID))
+		w.logger.Warn("Unknown event type", zap.String("event_type", outboxEvent.EventType), zap.Uint64("outbox_id", outboxEvent.ID))
 		return nil
 	}
 
 	// Mark event as published
 	now := time.Now()
 	outboxEvent.PublishedAt = &now
-	txnErr = w.outboxCommandRepo.UpdateOutboxPublished(ctx, outboxEvent)
+	txnErr := w.outboxCommandRepo.UpdateOutboxPublished(ctx, outboxEvent)
 	if txnErr != nil {
-		w.logger.Error("Failed to mark outbox event as published", zap.Any("error", txnErr), zap.Uint64("outbox_id", outboxID))
+		w.logger.Error("Failed to mark outbox event as published", zap.Any("error", txnErr), zap.Uint64("outbox_id", outboxEvent.ID))
 		return fmt.Errorf("failed to mark outbox event as published: %v", txnErr)
 	}
 
-	w.logger.Info("Successfully processed outbox event", zap.Uint64("outbox_id", outboxID), zap.String("event_type", outboxEvent.EventType))
+	w.logger.Info("Successfully processed outbox event", zap.Uint64("outbox_id", outboxEvent.ID), zap.String("event_type", outboxEvent.EventType))
 	return nil
 }
 

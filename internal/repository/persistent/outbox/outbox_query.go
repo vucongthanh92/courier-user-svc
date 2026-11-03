@@ -50,3 +50,23 @@ func (repo *outboxQueryRepository) GetOutboxByID(ctx context.Context, id uint64)
 
 	return &outbox, nil
 }
+
+func (repo *outboxQueryRepository) GetUnpublishedOutbox(ctx context.Context, limit int) (
+	[]entities.Outbox, *utilsError.ErrorBuilder) {
+
+	ctx, span := tracing.StartSpanFromContext(ctx, "GetUnpublishedOutbox")
+	defer span.End()
+	run := transaction.RunnerFromCtx(ctx, repo.readDb)
+
+	var outboxEvents []entities.Outbox
+	err := run.Model(entities.Outbox{}).
+		Where("published_at IS NULL").
+		Order("created_at ASC").
+		Limit(limit).
+		Find(&outboxEvents).Error
+	if err != nil {
+		return nil, utilsError.InitErrorBuilder(ctx).ValidateError(err)
+	}
+
+	return outboxEvents, nil
+}

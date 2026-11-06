@@ -15,6 +15,7 @@ import (
 	"github.com/vucongthanh92/courier-user-svc/helper/healthcheck"
 	"github.com/vucongthanh92/courier-user-svc/internal"
 	"github.com/vucongthanh92/courier-user-svc/internal/api"
+	"github.com/vucongthanh92/courier-user-svc/internal/profiling"
 	"github.com/vucongthanh92/courier-user-svc/redis"
 	"go.uber.org/zap"
 
@@ -92,6 +93,16 @@ func start() {
 
 	// Init logger
 	tracing.UseOpenTelemetry(tracing.Config(*cfg.Tracing))
+	stopProfiler, profilerEnabled, err := profiling.Start(cfg.ServiceName)
+	if err != nil {
+		logger.Warn("continuous profiling is unavailable", zap.Error(err))
+	} else if profilerEnabled {
+		defer func() {
+			if err := stopProfiler(); err != nil {
+				logger.Warn("stop continuous profiling", zap.Error(err))
+			}
+		}()
+	}
 
 	// Init Snowflake ID generator
 	// Initialize Sonyflake with a custom epoch and machine ID
@@ -105,7 +116,7 @@ func start() {
 	container, readDb, writeDb := registerDependencies()
 
 	// Init resources for localization
-	err := localization.InitResources(cfg.Http.Resources)
+	err = localization.InitResources(cfg.Http.Resources)
 	if err != nil {
 		logger.Fatal("Fail to init resources", zap.Error(err))
 	}
